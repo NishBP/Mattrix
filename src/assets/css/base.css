@@ -1,160 +1,51 @@
-/* src/assets/css/base.css */
-
-/* 1. Import Hubot Sans (if not already linked in index.html - linking in HTML is generally preferred for fonts) */
-/* @import url('https://hubot-sans.typeforward.com/hubot-sans.css'); */
-
-/* 2. Define Dark Theme Variables (Leveraging Bootstrap's CSS Variables where possible) */
+/* Add these custom colors at the top of src/assets/css/base.css */
 :root {
-    /* Override Bootstrap default colors for a dark theme */
-    --bs-body-color: #e9ecef; /* Light grey text */
-    --bs-body-bg: #111315; /* Dark background */
-    --bs-secondary-bg: #202020; /* Slightly lighter dark for cards, etc. */
-    --bs-tertiary-bg: #4f4f4f; /* Even lighter dark for accents */
-    --bs-border-color: #d1d1d1; /* Border color matching tertiary */
-    --bs-emphasis-color: #ffffff; /* White for highlighted text */
-    --bs-link-color: #7aa2f7; /* A nice blue for links */
-    --bs-link-hover-color: #9eceff; /* Lighter blue on hover */
-  
-    /* Custom variables */
-    --planogram-primary: #6a11cb; /* Example primary color (purple) */
-    --planogram-secondary: #0047c2; /* Example secondary color (blue) */
-  
-    /* Font Weights */
-    --font-weight-light: 300;
-    --font-weight-normal: 400;
-    --font-weight-medium: 500;
-    --font-weight-semibold: 600;
-    --font-weight-bold: 700; /* Bootstrap uses 700 for bold */
-  
-    /* Apply Hubot Sans globally */
-    --bs-body-font-family: 'Hubot Sans', sans-serif;
-    --bs-body-font-size: 1rem;
-    --bs-body-font-weight: var(--font-weight-normal); /* Default body weight */
-    --bs-body-line-height: 1.6;
-  
-    /* Headings */
-    --bs-heading-color: var(--bs-emphasis-color); /* White headings */
-    --bs-heading-font-weight: var(--font-weight-semibold); /* Heavier headings */
-  
-    /* Buttons - Leverage Bootstrap button styles but potentially override font weight */
-    --bs-btn-font-weight: var(--font-weight-medium);
-  
-    /* Forms */
-    --bs-form-control-bg: var(--bs-secondary-bg);
-    --bs-form-control-color: var(--bs-body-color);
-    --bs-form-control-border-color: var(--bs-border-color);
-    --bs-form-control-placeholder-color: #6c757d; /* Muted placeholder */
-    --bs-form-select-bg: var(--bs-secondary-bg);
-    --bs-form-select-color: var(--bs-body-color);
-    --bs-form-select-border-color: var(--bs-border-color);
-  
-    /* Set HTML and Body defaults */
-    color-scheme: dark; /* Inform browser about the dark theme */
-  }
-  
-  html, body {
-    height: 100%;
-    margin: 0;
-    font-family: var(--bs-body-font-family);
-    background-color: var(--bs-body-bg);
-    color: var(--bs-body-color);
-    font-weight: var(--bs-body-font-weight);
-    line-height: var(--bs-body-line-height);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }
-  
-  #app {
-    min-height: 100%;
-    display: flex;
-    flex-direction: column;
-  }
-  
-  /* General Styling */
-  h1, h2, h3, h4, h5, h6 {
-    color: var(--bs-heading-color);
-    font-weight: var(--bs-heading-font-weight);
-  }
-  
-  a {
-    color: var(--bs-link-color);
-    text-decoration: none; /* Optional: remove underline */
-  }
-  
-  a:hover {
-    color: var(--bs-link-hover-color);
-    text-decoration: underline; /* Optional: add underline on hover */
-  }
-  
-  /* Utility class for lighter text */
-  .text-light-emphasis {
-      color: var(--bs-body-color) !important; /* Ensure override */
-      opacity: 0.75; /* Make it slightly transparent */
-      font-weight: var(--font-weight-light); /* Use lighter weight */
-  }
-  
-  /* Placeholder Styling */
-  ::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
-    color: var(--bs-form-control-placeholder-color);
-    opacity: 1; /* Firefox */
-    font-weight: var(--font-weight-light);
-  }
-  
-  :-ms-input-placeholder { /* Internet Explorer 10-11 */
-    color: var(--bs-form-control-placeholder-color);
-     font-weight: var(--font-weight-light);
-  }
-  
-  ::-ms-input-placeholder { /* Microsoft Edge */
-    color: var(--bs-form-control-placeholder-color);
-     font-weight: var(--font-weight-light);
-  }
-  
-  
-  /* Ensure Bootstrap components pick up the theme */
-  /* Add more specific overrides if needed */
-  .card {
-      background-color: var(--bs-secondary-bg);
-      border-color: var(--bs-border-color);
-  }
-  
-  .modal-content {
-      background-color: var(--bs-secondary-bg);
-      border-color: var(--bs-border-color);
-  }
-  
-  .modal-header, .modal-footer {
-       border-bottom-color: var(--bs-border-color);
-       border-top-color: var(--bs-border-color);
-  }
-  
-  /* Add custom scrollbar styling for a better dark theme look */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  
-  ::-webkit-scrollbar-track {
-    background: var(--bs-body-bg);
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    background-color: var(--bs-tertiary-bg);
-    border-radius: 4px;
-    border: 2px solid var(--bs-body-bg); /* Creates padding around thumb */
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background-color: var(--bs-secondary-bg); /* Slightly lighter on hover */
-  }
-  
-  /* Style for horizontal scrollbar if needed */
-  /* Example: Apply to specific containers like the company columns */
-  .horizontal-scroll-container::-webkit-scrollbar {
-      height: 10px; /* Adjust height for horizontal */
-  }
-  .horizontal-scroll-container::-webkit-scrollbar-thumb {
-      border: 3px solid var(--bs-body-bg); /* Adjust border for horizontal */
-  }
-  
-  
+  /* Custom colors from the design PDF */
+  --card-bg: #1a1a1a;
+  --border-color: #a1a1a1;
+  --text-color: #d9d9d9;
+  --status-red: #c14748;
+  --status-yellow: #ffde59;
+  --status-blue: #5271ff;
+  --button-blue: #26475d;
+
+  /* Update Bootstrap theme variables to match our design */
+  --bs-body-bg: #111315;
+  --bs-secondary-bg: var(--card-bg);
+  --bs-border-color: var(--border-color);
+  --bs-body-color: var(--text-color);
+  --bs-link-color: var(--status-blue);
+}
+
+/* Add these button styles */
+.btn {
+  border-radius: 50rem; /* Fully rounded corners */
+  transition: all 0.2s ease-in-out; /* Smooth hover animations */
+}
+
+.btn-danger {
+  background-color: var(--status-red);
+  border-color: var(--status-red);
+}
+
+.btn-warning {
+  background-color: var(--status-yellow);
+  border-color: var(--status-yellow);
+  color: #000;
+}
+
+.btn-primary {
+  background-color: var(--status-blue);
+  border-color: var(--status-blue);
+}
+
+.btn-filter {
+  background-color: var(--button-blue);
+  border-color: var(--button-blue);
+  color: white;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}

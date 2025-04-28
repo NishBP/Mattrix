@@ -1,41 +1,36 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { useAdminDataStore } from '@/stores/adminDataStore';
-import { createUserWithEmailAndPassword } from 'firebase/auth'; // Import Auth function
-import { auth } from '@/firebase/config'; // Import auth instance
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/firebase/config';
 
 const adminStore = useAdminDataStore();
 
-// Form state
 const formData = reactive({
   displayName: '',
   email: '',
-  password: '', // Add password field
+  password: '',
   phoneNumber: '',
-  dob: '', // Date of Birth
+  dob: '',
   role: 'CategoryManager', // Default role
-  companyId: '', // Link to a company
+  companyId: '',
 });
 
-// State for loading, errors, and success messages
 const isLoading = ref(false);
 const error = ref(null);
 const successMessage = ref('');
 
-// Fetch companies for the dropdown
 onMounted(() => {
     if (adminStore.companies.length === 0) {
         adminStore.fetchCompanies();
     }
 });
 
-// Function to handle form submission
 const handleSubmit = async () => {
   isLoading.value = true;
   error.value = null;
   successMessage.value = '';
 
-  // Basic Validation
   if (!formData.email || !formData.password || !formData.displayName || !formData.role || !formData.companyId) {
     error.value = 'Please fill in all required fields (Name, Email, Password, Role, Company).';
     isLoading.value = false;
@@ -48,42 +43,36 @@ const handleSubmit = async () => {
    }
 
   try {
-    // 1. Create user in Firebase Authentication
+    // 1. Create Auth user
     const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
     const authUser = userCredential.user;
     console.log('Firebase Auth user created:', authUser.uid);
 
-    // 2. Prepare Firestore data (exclude password)
+    // 2. Prepare Firestore data
     const firestoreData = {
       displayName: formData.displayName,
-      // email: formData.email, // Email is already part of authUser, store adds it
-      phoneNumber: formData.phoneNumber || null, // Store null if empty
-      dob: formData.dob || null, // Store null if empty
+      phoneNumber: formData.phoneNumber || null,
+      dob: formData.dob || null,
       role: formData.role,
       companyId: formData.companyId,
-      // Let the store handle createdAt, isActive, accountStatus defaults
     };
 
-    // 3. Add user profile to Firestore via the store action
+    // 3. Add user profile to Firestore
     const success = await adminStore.addUser({ uid: authUser.uid, email: authUser.email }, firestoreData);
 
     if (success) {
       successMessage.value = `User ${formData.displayName} (${formData.email}) created successfully!`;
-      // Clear the form
       Object.assign(formData, {
         displayName: '', email: '', password: '', phoneNumber: '', dob: '',
         role: 'CategoryManager', companyId: ''
       });
     } else {
-      // Error likely came from the store action (Firestore write)
       error.value = adminStore.error || 'Failed to save user profile to database. Auth user might still exist.';
-      // IMPORTANT: Need a mechanism to delete the Auth user if Firestore fails (ideally Cloud Function)
       console.warn(`Firestore failed for Auth user ${authUser.uid}. Manual cleanup might be needed.`);
     }
 
   } catch (err) {
     console.error("Add User Error:", err);
-    // Handle Firebase Auth errors specifically
     if (err.code === 'auth/email-already-in-use') {
         error.value = 'This email address is already registered.';
     } else if (err.code === 'auth/weak-password') {
@@ -133,7 +122,7 @@ const handleSubmit = async () => {
                         <label for="role" class="form-label">Assign Role *</label>
                         <select id="role" class="form-select" v-model="formData.role" required :disabled="isLoading">
                             <option value="CategoryManager">Category Manager</option>
-                            <option value="Admin">Admin</option>
+                            <option value="Admin">Admin (Company)</option>
                             </select>
                     </div>
                      <div class="col-md-6">
@@ -151,28 +140,12 @@ const handleSubmit = async () => {
                     </div>
                  </div>
 
-
-                <div v-if="isLoading" class="text-center mb-3">
-                    <div class="spinner-border spinner-border-sm" role="status">
-                    <span class="visually-hidden">Creating user...</span>
-                    </div>
-                    <span class="ms-2">Creating user...</span>
-                </div>
-
-                <div v-if="error && !isLoading" class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <small>{{ error }}</small>
-                    <button type="button" class="btn-close btn-sm" @click="error = null" aria-label="Close"></button>
-                </div>
-
-                 <div v-if="successMessage && !isLoading" class="alert alert-success" role="alert">
-                    <small>{{ successMessage }}</small>
-                </div>
-
+                <div v-if="isLoading" class="text-center mb-3">...Creating user...</div>
+                <div v-if="error && !isLoading" class="alert alert-danger">{{ error }}</div>
+                <div v-if="successMessage && !isLoading" class="alert alert-success">{{ successMessage }}</div>
 
                 <div class="d-grid d-md-flex justify-content-md-end">
-                    <button type="submit" class="btn btn-primary px-5" :disabled="isLoading">
-                        Create User
-                    </button>
+                    <button type="submit" class="btn btn-primary px-5" :disabled="isLoading">Create User</button>
                 </div>
             </form>
         </div>
@@ -181,60 +154,16 @@ const handleSubmit = async () => {
 </template>
 
 <style scoped>
-.admin-add-user {
-  /* Add specific styles if needed */
-}
-.card {
-    background-color: var(--bs-secondary-bg);
-    border-color: var(--bs-border-color);
-}
-.form-label {
-    font-weight: var(--font-weight-medium);
-}
-.form-text {
-    color: var(--bs-light-emphasis);
-    font-size: 0.85rem;
-}
-.form-text.text-warning {
-    color: var(--bs-warning) !important;
-}
-.form-control, .form-select {
-    background-color: var(--bs-body-bg);
-    color: var(--bs-body-color);
-    border: 1px solid var(--bs-border-color);
-}
-.form-control:focus, .form-select:focus {
-    background-color: var(--bs-body-bg);
-    color: var(--bs-body-color);
-    border-color: var(--bs-link-color);
-    box-shadow: 0 0 0 0.2rem rgba(var(--bs-link-color-rgb), 0.2);
-}
-.form-control::placeholder {
-    color: var(--bs-form-control-placeholder-color);
-}
-.btn-primary {
-     --bs-btn-color: #fff;
-     --bs-btn-bg: var(--bs-link-color);
-     --bs-btn-border-color: var(--bs-link-color);
-     --bs-btn-hover-bg: #5a8ced;
-     --bs-btn-hover-border-color: #5a8ced;
-     --bs-btn-active-bg: #4e7fe1;
-     --bs-btn-active-border-color: #4e7fe1;
-     --bs-btn-disabled-bg: var(--bs-link-color);
-     --bs-btn-disabled-border-color: var(--bs-link-color);
-}
-
-.alert-danger {
-    --bs-alert-color: #f8d7da;
-    --bs-alert-bg: #842029;
-    --bs-alert-border-color: #f5c2c7;
-}
-.alert-danger .btn-close {
-    filter: invert(1) grayscale(100%) brightness(200%);
-}
-.alert-success {
-    --bs-alert-color: #d1e7dd;
-    --bs-alert-bg: #0f5132;
-    --bs-alert-border-color: #badbcc;
-}
+/* Styles remain largely the same */
+.admin-add-user {}
+.card { background-color: var(--bs-secondary-bg); border-color: var(--bs-border-color); }
+.form-label { font-weight: var(--font-weight-medium); }
+.form-text { color: var(--bs-light-emphasis); font-size: 0.85rem; }
+.form-text.text-warning { color: var(--bs-warning) !important; }
+.form-control, .form-select { background-color: var(--bs-body-bg); color: var(--bs-body-color); border: 1px solid var(--bs-border-color); }
+.form-control:focus, .form-select:focus { background-color: var(--bs-body-bg); color: var(--bs-body-color); border-color: var(--bs-link-color); box-shadow: 0 0 0 0.2rem rgba(var(--bs-link-color-rgb), 0.2); }
+.form-control::placeholder { color: var(--bs-form-control-placeholder-color); }
+.btn-primary { /* Styles defined in base.css or specific component */ }
+.alert-danger { /* Styles defined in base.css or specific component */ }
+.alert-success { /* Styles defined in base.css or specific component */ }
 </style>

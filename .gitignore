@@ -135,4 +135,4 @@
         # IDE config folders
         .idea/
         .vscode/
-        
+        node_modules

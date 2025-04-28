@@ -1,6 +1,6 @@
 // src/stores/authStore.js
 import { defineStore } from 'pinia';
-import { ref, computed, watch } from 'vue'; // Import watch
+import { ref, computed, watch } from 'vue';
 // import { useRouter } from 'vue-router'; // No longer needed here
 import {
     signInWithEmailAndPassword,
@@ -14,51 +14,86 @@ import { auth, db } from '@/firebase/config';
 export const useAuthStore = defineStore('auth', () => {
     // --- State ---
     const user = ref(undefined);
-    const userInfo = ref(undefined);
+    const userInfo = ref(undefined); // Holds Firestore user profile { id, email, role, companyId, ... }
     const isLoading = ref(true);
     const error = ref(null);
 
     // --- Getters (Computed Properties) ---
     const isAuthenticated = computed(() => !!user.value);
-    const isAdmin = computed(() => userInfo.value?.role === 'SuperAdmin');
+    const isSuperAdmin = computed(() => userInfo.value?.role === 'SuperAdmin');
+    // *** NEW: Check for company-level Admin or Category Manager ***
+    const isCompanyUser = computed(() => userInfo.value?.role === 'Admin' || userInfo.value?.role === 'CategoryManager');
+    // *** NEW: Check for Store Manager ***
+    const isStoreManager = computed(() => userInfo.value?.role === 'StoreManager');
     const userId = computed(() => user.value?.uid || null);
+    const userCompanyId = computed(() => userInfo.value?.companyId || null); // Get user's company ID
 
     // --- Actions ---
 
     /**
      * Attempts to log in a user with email and password.
-     * Performs ONLY the sign-in. Relies on listener and router guard for profile fetch and redirection.
+     * Relies on listener and router guard for profile fetch and redirection.
      * @param {string} email - User's email.
      * @param {string} password - User's password.
-     * @param {object} router - The Vue Router instance (passed from component - needed for logout only now).
+     * @param {object} router - The Vue Router instance (passed from component).
      */
-    async function login(email, password, router) { // Keep router param for consistency if logout needs it
+    async function login(email, password, router) {
         isLoading.value = true;
         error.value = null;
-        // No router check needed here anymore for login itself
-
+        if (!router) {
+            console.error("Login Action Error: Router instance was not provided.");
+            error.value = "An internal error occurred (Router missing).";
+            isLoading.value = false;
+            return;
+        }
         try {
             console.log(`Attempting login for ${email}...`);
             // 1. Sign in the user - this triggers onAuthStateChanged listener
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             console.log(`signInWithEmailAndPassword successful for ${email}. Listener will handle profile fetch.`);
 
-            // 2. *** NO fetchUserInfo call here ***
-            // 3. *** NO watcher or timeout here ***
-            // 4. *** NO redirection logic here ***
-            // The router guard will handle redirection based on the state updated by the listener
+            // 2. Wait for userInfo to be populated by the listener
+            const loadedUserInfo = await new Promise((resolve) => {
+                if (userInfo.value !== undefined) { // Already loaded?
+                    resolve(userInfo.value);
+                    return;
+                }
+                const unwatch = watch(() => userInfo.value, (newValue) => {
+                    if (newValue !== undefined) {
+                        unwatch(); resolve(newValue);
+                    }
+                });
+                // Safety timeout
+                setTimeout(() => { unwatch(); resolve(userInfo.value); }, 3000);
+            });
 
-            // Optionally clear previous errors on successful sign-in attempt
-            // error.value = null; // Let listener's fetchUserInfo handle errors related to profile
+            // 3. Redirect based on role (using computed properties now)
+             if (isAuthenticated.value) {
+                 if (loadedUserInfo === null && !error.value) { // Check if fetch failed silently
+                     error.value = "Login succeeded but user profile could not be loaded or is inactive.";
+                     console.warn(error.value);
+                 } else if (isSuperAdmin.value) {
+                     console.log("Login successful, redirecting to Admin Dashboard...");
+                     router.push({ name: 'AdminDashboard' });
+                 } else if (isCompanyUser.value || isStoreManager.value) { // Redirect Admin, CM, StoreManager to main dashboard
+                     console.log(`Login successful as ${userInfo.value?.role}, redirecting to Main Dashboard...`);
+                     router.push({ name: 'DashboardStores' }); // Default main dashboard route
+                 } else if (loadedUserInfo) {
+                     console.warn("Login successful but user has unrecognized role:", userInfo.value?.role);
+                     error.value = "Login succeeded but user role is not recognized.";
+                 }
+                 // If error was already set by fetchUserInfo (e.g., inactive), don't redirect
+             } else {
+                 console.error("Login failed: User is not authenticated after successful sign-in call.");
+                 if (!error.value) error.value = "Authentication failed unexpectedly after sign-in.";
+             }
 
         } catch (err) {
             console.error("Login Error (signInWithEmailAndPassword):", err);
             error.value = getFriendlyErrorMessage(err.code || 'unknown');
-            // Clear user state immediately on sign-in failure
             user.value = null;
             userInfo.value = null;
         } finally {
-            // Set loading false *after* sign-in attempt, even if listener is still running
             isLoading.value = false;
         }
     }
@@ -77,7 +112,7 @@ export const useAuthStore = defineStore('auth', () => {
             await signOut(auth);
             console.log("Logout successful, redirecting to Login...");
             if (router) {
-                router.push('/login');
+                router.push({ name: 'Login' }); // Ensure redirect uses name
             } else {
                 window.location.pathname = '/login'; // Fallback
             }
@@ -111,22 +146,23 @@ export const useAuthStore = defineStore('auth', () => {
                     console.warn(`fetchUserInfo (listener): User ${uid} is inactive.`);
                     throw new Error("User account is inactive.");
                 }
-                userInfo.value = { id: userDocSnap.id, ...data };
+                // *** Assign companyId directly ***
+                userInfo.value = { id: userDocSnap.id, companyId: data.companyId, ...data };
             } else {
                 console.warn(`fetchUserInfo (listener): User document not found for UID: ${uid}.`);
-                userInfo.value = null; // Set to null if not found
+                userInfo.value = null;
             }
         } catch (err) {
             console.error("Fetch User Info Error (listener):", err);
             if (err.message === "User account is inactive.") {
-                error.value = err.message; // Set global error for inactive
+                error.value = err.message;
                 console.log("fetchUserInfo (listener): Forcing logout due to inactive account.");
                 signOut(auth).catch(signOutError => console.error("Error during forced sign out:", signOutError));
             } else {
                  console.error("fetchUserInfo (listener): Non-critical fetch error:", err.message);
-                 userInfo.value = null; // Set to null on other fetch errors too
+                 userInfo.value = null;
             }
-            if (userInfo.value !== null) userInfo.value = null; // Ensure null on error
+            if (userInfo.value !== null) userInfo.value = null;
         }
     }
 
@@ -141,7 +177,7 @@ export const useAuthStore = defineStore('auth', () => {
                 if (user.value?.uid !== currentUser.uid) {
                     user.value = currentUser;
                 }
-                fetchUserInfo(currentUser.uid); // Trigger fetch
+                fetchUserInfo(currentUser.uid);
             } else {
                 user.value = null;
                 userInfo.value = null;
@@ -179,7 +215,9 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     return {
-        user, userInfo, isLoading, error, isAuthenticated, isAdmin, userId,
+        user, userInfo, isLoading, error, isAuthenticated,
+        isSuperAdmin, isCompanyUser, isStoreManager, // Expose new role checks
+        userId, userCompanyId, // Expose companyId
         login, logout, fetchUserInfo, initializeAuthListener, tryRestoreAuthState,
     };
 });

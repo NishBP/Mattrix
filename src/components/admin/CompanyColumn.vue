@@ -7,21 +7,16 @@ const props = defineProps({
     type: Object,
     required: true,
   },
-  // Pass users specific to this company if not already nested in company object
-  // users: {
-  //   type: Array,
-  //   required: true,
-  // }
 });
 
 const emit = defineEmits(['editCompany', 'deleteCompany', 'toggleStatus', 'editUser']);
 
 const getStatusClass = (status) => {
     switch (status) {
-        case 'Active': return 'bg-success';
-        case 'Setting up': return 'bg-info text-dark';
-        case 'Services Paused': return 'bg-warning text-dark';
-        default: return 'bg-secondary';
+        case 'Active': return 'status-active';
+        case 'Setting up': return 'status-setting-up';
+        case 'Services Paused': return 'status-paused';
+        default: return 'status-default';
     }
 };
 
@@ -30,34 +25,65 @@ const handleEditCompany = () => {
 };
 
 const handleDeleteCompany = () => {
-    emit('deleteCompany', props.company); // Pass full company for context if needed
+    emit('deleteCompany', props.company);
 };
 
 const handleToggleStatus = () => {
-    emit('toggleStatus', props.company); // Pass full company
+    emit('toggleStatus', props.company);
 };
 
 // Forward the editUser event from UserCard
 const handleEditUser = (user) => {
     emit('editUser', user);
 };
-
 </script>
 
 <template>
   <div class="company-column">
-    <div class="card shadow-sm h-100">
-      <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <h5 class="mb-0 text-truncate" :title="company.companyName">
-            {{ company.companyName }}
-            <span class="text-muted fw-normal">({{ company.users?.length || 0 }})</span>
-        </h5>
-        <span :class="['badge', getStatusClass(company.subscriptionStatus)]">
-          {{ company.subscriptionStatus }}
-        </span>
+    <div class="company-card">
+      <!-- Top Section with Company Name and Status/Users tags side by side -->
+      <div class="company-header">
+        <div class="company-name-container">
+          <h5 class="company-name">{{ company.companyName }}</h5>
+        </div>
+        <div class="tags-container">
+          <div :class="['status-badge', getStatusClass(company.subscriptionStatus)]">
+            {{ company.subscriptionStatus }}
+          </div>
+          <div class="user-count">
+            {{ company.users?.length || 0 }} users
+          </div>
+        </div>
       </div>
 
-      <div class="card-body user-cards-container">
+      <!-- Buttons right beneath the company name -->
+      <div class="button-section">
+        <button class="btn-delete" title="Delete Company" @click="handleDeleteCompany">
+          Delete company
+        </button>
+        <button
+          v-if="company.subscriptionStatus === 'Active'"
+          class="btn-pause"
+          title="Pause Services"
+          @click="handleToggleStatus"
+        >
+          Pause services
+        </button>
+        <button
+          v-else
+          class="btn-resume"
+          title="Resume Services"
+          @click="handleToggleStatus"
+        >
+          Resume Services
+        </button>
+        <button class="btn-edit" title="Edit Company" @click="handleEditCompany">
+          Edit
+        </button>
+      </div>
+
+      <!-- User Cards Area -->
+      <div class="user-cards-container">
         <div v-if="!company.users || company.users.length === 0" class="text-center text-muted py-3">
           <small>No users assigned to this company.</small>
         </div>
@@ -68,96 +94,198 @@ const handleEditUser = (user) => {
           @edit-user="handleEditUser"
         />
       </div>
-
-      <div class="card-footer d-flex justify-content-end gap-2">
-        <button class="btn btn-sm btn-outline-secondary" title="Edit Company" @click="handleEditCompany">
-           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil-square" viewBox="0 0 16 16"><path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/><path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5v11z"/></svg>
-        </button>
-        <button
-          class="btn btn-sm"
-          :class="company.subscriptionStatus === 'Active' ? 'btn-outline-warning' : 'btn-outline-success'"
-          :title="company.subscriptionStatus === 'Active' ? 'Pause Services' : 'Resume Services'"
-          @click="handleToggleStatus"
-        >
-          <svg v-if="company.subscriptionStatus === 'Active'" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pause-circle" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M5 6.25a1.25 1.25 0 1 1 2.5 0v3.5a1.25 1.25 0 1 1-2.5 0v-3.5zm3.5 0a1.25 1.25 0 1 1 2.5 0v3.5a1.25 1.25 0 1 1-2.5 0v-3.5z"/></svg>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-play-circle" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M6.271 5.055a.5.5 0 0 1 .52.038l3.5 2.5a.5.5 0 0 1 0 .814l-3.5 2.5A.5.5 0 0 1 6 10.5v-5a.5.5 0 0 1 .271-.445z"/></svg>
-        </button>
-        <button class="btn btn-sm btn-outline-danger" title="Delete Company" @click="handleDeleteCompany">
-           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3" viewBox="0 0 16 16"><path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.506a.58.58 0 0 0-.01 0H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1h-.995a.59.59 0 0 0-.01 0H11Zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5h9.916Zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47ZM8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Z"/></svg>
-        </button>
-      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
 .company-column {
-    display: inline-block; /* Align columns horizontally */
-    width: 320px; /* Fixed width for columns */
-    max-width: 90vw; /* Prevent excessive width on small screens */
-    vertical-align: top; /* Align columns at the top */
-    white-space: normal; /* Allow content inside to wrap */
-    height: calc(100% - 1px); /* Fill height minus border allowance */
-    margin-right: 1rem; /* Space between columns */
+    display: inline-block;
+    width: 98%; /* Changed from 380px to 48% for 2 columns per row */
+    max-width: 90vw;
+    vertical-align: top;
+    white-space: normal;
+    height: 100%;
+    margin-right: 0.75rem; /* Reduced margin to match the gap */
 }
+
 .company-column:last-child {
     margin-right: 0;
 }
 
-.card {
-    background-color: var(--bs-secondary-bg);
-    border-color: var(--bs-border-color);
-    display: flex; /* Enable flex for footer alignment */
+.company-card {
+    background-color: #1a1a1a;
+    border: 1px solid #a1a1a1;
+    border-radius: 15px;
+    overflow: hidden;
+    display: flex;
     flex-direction: column;
+    height: 100%;
 }
-.card-header {
-     background-color: var(--bs-tertiary-bg);
-     border-bottom: 1px solid var(--bs-border-color);
-     font-size: 0.95rem;
-     padding: 0.75rem 1rem; /* Adjust padding */
-}
-.card-header h5 {
-    font-size: 1.05rem; /* Slightly smaller heading */
-    font-weight: var(--font-weight-medium);
-    color: var(--bs-emphasis-color);
-}
-.user-cards-container {
-    flex-grow: 1; /* Allow body to take available space */
-    overflow-y: auto; /* Enable scrolling for user cards */
-    max-height: 450px; /* Adjust max height as needed */
-    padding: 0.75rem; /* Padding inside the scrollable area */
-}
-.card-footer {
-    background-color: var(--bs-tertiary-bg);
-    border-top: 1px solid var(--bs-border-color);
-    padding: 0.5rem 0.75rem; /* Smaller footer padding */
-}
-.badge {
-    font-size: 0.75rem;
-    padding: 0.3em 0.5em;
-}
-.badge.bg-success { background-color: #198754 !important; }
-.badge.bg-warning { background-color: #ffc107 !important; color: #000 !important; }
-.badge.bg-info { background-color: #0dcaf0 !important; }
-.badge.bg-secondary { background-color: #6c757d !important; }
 
-.btn-sm {
-    padding: 0.2rem 0.5rem; /* Smaller buttons */
+/* Top section with company name and tags side by side */
+.company-header {
+    padding: 1rem 1rem 0.5rem;
+    display: flex;
+    gap: 1rem;
+}
+
+.company-name-container {
+    flex: 2;
+    background-color: #1a1a1a;
+    border: 1px solid #a1a1a1;
+    border-radius: 50px;
+    padding: 0.5rem;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.company-name {
+    margin: 0;
+    color: white;
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.tags-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.status-badge {
+    width: 100%;
+    border-radius: 50px;
+    padding: 0.4rem 0.5rem;
+    font-weight: 500;
+    text-align: center;
     font-size: 0.8rem;
 }
 
-/* Custom scrollbar for user cards container */
+.status-active {
+    background-color: #4CAF50;
+    color: black;
+}
+
+.status-setting-up {
+    background-color: #26475d;
+    color: white;
+}
+
+.status-paused {
+    background-color: #ffde59;
+    color: black;
+}
+
+.status-default {
+    background-color: #6c757d;
+    color: white;
+}
+
+.user-count {
+    width: 100%;
+    background-color: #a1a1a1;
+    color: black;
+    border-radius: 50px;
+    padding: 0.4rem 0.5rem;
+    font-weight: 500;
+    text-align: center;
+    font-size: 0.8rem;
+}
+
+/* Button section right below company name */
+.button-section {
+    padding: 0.5rem 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    border-bottom: 1px solid #a1a1a1;
+}
+
+.btn-delete, .btn-pause, .btn-resume, .btn-edit {
+    flex: 1;
+    min-width: 80px;
+    border-radius: 50px;
+    padding: 0.35rem 0.5rem;
+    font-weight: 500;
+    text-align: center;
+    border: 1px solid;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.btn-delete {
+    background-color: transparent;
+    border-color: #c14748;
+    color: #d9d9d9;
+}
+
+.btn-delete:hover {
+    background-color: #c14748;
+    color: white;
+}
+
+.btn-pause {
+    background-color: transparent;
+    border-color: #5271ff;
+    color: #d9d9d9;
+}
+
+.btn-pause:hover {
+    background-color: #5271ff;
+    color: white;
+}
+
+.btn-resume {
+    background-color: transparent;
+    border-color: #5271ff;
+    color: #d9d9d9;
+}
+
+.btn-resume:hover {
+    background-color: #5271ff;
+    color: white;
+}
+
+.btn-edit {
+    background-color: transparent;
+    border-color: #a1a1a1;
+    color: #d9d9d9;
+}
+
+.btn-edit:hover {
+    background-color: #a1a1a1;
+    color: #1a1a1a;
+}
+
+/* User cards area */
+.user-cards-container {
+    flex-grow: 1;
+    overflow-y: auto;
+    padding: 0.75rem;
+    background-color: #1a1a1a;
+    min-height: 100px;
+}
+
+/* Custom scrollbar for user cards area */
 .user-cards-container::-webkit-scrollbar {
     width: 6px;
 }
 .user-cards-container::-webkit-scrollbar-track {
-  background: var(--bs-secondary-bg); /* Match card body */
+    background: #1a1a1a;
 }
 .user-cards-container::-webkit-scrollbar-thumb {
-  background-color: var(--bs-border-color); /* Use border color */
-  border-radius: 3px;
+    background-color: #a1a1a1;
+    border-radius: 3px;
 }
 .user-cards-container::-webkit-scrollbar-thumb:hover {
-  background-color: var(--bs-light-emphasis);
+    background-color: #d9d9d9;
 }
 </style>

@@ -1,38 +1,34 @@
 <script setup>
-// *** THIS IS THE CORRECTED SCRIPT SETUP BLOCK ***
+// *** Import AdminNav HERE ***
 import AdminNav from '@/components/admin/AdminNav.vue';
-import AdminModals from '@/components/admin/AdminModals.vue'; // Import AdminModals
+import AdminModals from '@/components/admin/AdminModals.vue';
 import { useAdminDataStore } from '@/stores/adminDataStore';
 
 const adminStore = useAdminDataStore();
 </script>
 
 <template>
-  <div class="admin-layout d-flex flex-column min-vh-100">
-    <AdminNav />
-    <main class="container-fluid flex-grow-1 admin-content-area">
-      <RouterView />
+  <div class="admin-layout">
+    <main class="admin-content-area">
+      <div class="p-3 p-md-4"> <AdminNav />
+            <RouterView />
+       </div>
     </main>
+
     <AdminModals v-if="adminStore.isEditUserModalVisible || adminStore.isEditCompanyModalVisible || adminStore.isConfirmDialogVisible || adminStore.isViewLeadModalVisible" />
-     </div>
+
+  </div>
 </template>
 
 <style scoped>
-/* *** THIS IS THE CORRECTED STYLE BLOCK *** */
 .admin-layout {
-  background-color: var(--bs-body-bg); /* Ensure layout background is dark */
+  background-color: var(--bs-body-bg); /* e.g., #111315 */
+  min-height: 100vh;
 }
 .admin-content-area {
-  padding-top: 70px; /* Adjust based on fixed navbar height */
-  padding-bottom: 2rem; /* Add some space at the bottom */
+  padding: 0; /* Layout itself has no padding */
+  width: 100%;
 }
+/* The p-3/p-md-4 wrapper provides padding for the content */
 
-/* Adjust padding-top if your navbar height differs */
-@media (max-width: 991.98px) {
-  .admin-content-area {
-     /* Navbar might wrap or change height on smaller screens */
-     /* Adjust padding-top if necessary after testing */
-     padding-top: 60px; /* Example adjustment */
-  }
-}
 </style>
